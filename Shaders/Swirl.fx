@@ -28,6 +28,8 @@ float4 Swirl(float4 pos : SV_Position, float2 texcoord : TEXCOORD0) : SV_TARGET
 
     float2 center = float2(x_coord, y_coord);
     float2 offset_center = float2(offset_x, offset_y);
+    float2 ar_angle_multiplier;
+    sincos(radians(aspect_ratio_angle), ar_angle_multiplier.y, ar_angle_multiplier.x);
 
     if (use_mouse_point)
         center = float2(mouse_coordinates.x * BUFFER_RCP_WIDTH, mouse_coordinates.y * BUFFER_RCP_HEIGHT);
@@ -36,6 +38,7 @@ float4 Swirl(float4 pos : SV_Position, float2 texcoord : TEXCOORD0) : SV_TARGET
         center = mul(swirlTransform(radians(aspect_ratio_angle)), center);
 
         tc = mul(swirlTransform(radians(aspect_ratio_angle)), tc - center);
+        // tc.y /= max(ar_angle_multiplier.x, ar_angle_multiplier.y);
         tc += mul(swirlTransform(radians(aspect_ratio_angle)), center);
     }
 
@@ -44,10 +47,10 @@ float4 Swirl(float4 pos : SV_Position, float2 texcoord : TEXCOORD0) : SV_TARGET
 
     tc.x /= ar;
 
+    // Distance to the current coordiate from the center of the swirl.
     const float dist = distance(center, tc);
     const float dist_radius = radius-dist;
     const float tension_radius = lerp(radius-dist, radius, tension);
-    const float tension_dist = lerp(dist_radius, tension_radius, tension);
     float percent;
     float theta;
 
@@ -55,8 +58,9 @@ float4 Swirl(float4 pos : SV_Position, float2 texcoord : TEXCOORD0) : SV_TARGET
     if(inverse && dist < radius)
         percent = 1 - percent;
 
-    if(dist_radius > radius-inner_radius)
-        percent = 1;
+    if(dist_radius > radius-inner_radius){
+        percent = 0;
+    }
 
     theta = percent * percent;
 
@@ -77,9 +81,11 @@ float4 Swirl(float4 pos : SV_Position, float2 texcoord : TEXCOORD0) : SV_TARGET
 
     if(aspect_ratio_angle) {
         center.x *= ar;
+
         center = mul(swirlTransform(radians(-aspect_ratio_angle)), center);
 
         tc = mul(swirlTransform(radians(-aspect_ratio_angle)), tc - center);
+        // tc.y *= max(ar_angle_multiplier.x, ar_angle_multiplier.y);
         tc += mul(swirlTransform(radians(-aspect_ratio_angle)), center);
     }
 
